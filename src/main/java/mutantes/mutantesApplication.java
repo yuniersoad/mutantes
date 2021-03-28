@@ -3,6 +3,7 @@ package mutantes;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import mutantes.resources.MutantResource;
 
 public class mutantesApplication extends Application<mutantesConfiguration> {
 
@@ -17,13 +18,12 @@ public class mutantesApplication extends Application<mutantesConfiguration> {
 
     @Override
     public void initialize(final Bootstrap<mutantesConfiguration> bootstrap) {
-        // TODO: application initialization
+
     }
 
     @Override
     public void run(final mutantesConfiguration configuration,
                     final Environment environment) {
-        // TODO: implement application
+        environment.jersey().register(new MutantResource());
     }
-
 }
