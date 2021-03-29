@@ -16,8 +16,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import java.util.Arrays;
-
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;

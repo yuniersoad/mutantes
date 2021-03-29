@@ -28,7 +28,7 @@ public class Detector {
         for (int[] move: direction) {
             i += move[0];
             j += move[1];
-            if (i < 0 || i >= sequence.length || j < 0 || j >= sequence.length // Check bounds
+            if (i < 0 || i >= sequence.length || j < 0 || j >= sequence[i].length // Check bounds
                     || baseValue != sequence[i][j]){
                 return false;
             }

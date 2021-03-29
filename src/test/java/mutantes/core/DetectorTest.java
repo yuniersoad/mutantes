@@ -6,7 +6,6 @@ import static mutantes.core.Detector.isMutant;
 import static org.junit.Assert.*;
 
 public class DetectorTest {
-
     @Test
     public void isMutantPositive() {
         final String[] sequence = new String[] {
@@ -16,6 +15,24 @@ public class DetectorTest {
                 "AGAAGG",
                 "CCCCTA",
                 "TCACTG"
+        };
+        assertTrue(isMutant(sequence));
+    }
+
+    @Test
+    public void isMutantPositiveRectangular() {
+        String[] sequence = new String[] {
+                "AAA",
+                "AAA",
+                "AAA",
+                "AAA",
+        };
+        assertTrue(isMutant(sequence));
+
+        sequence = new String[] {
+                "AAAA",
+                "AAAA",
+                "AAAA",
         };
         assertTrue(isMutant(sequence));
     }
