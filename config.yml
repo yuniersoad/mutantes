@@ -2,3 +2,7 @@ logging:
   level: INFO
   loggers:
     com.mutantes: DEBUG
+
+DBRegion: ${AWS_DEFAULT_REGION:-us-east-1}
+DBAccessKeyId: ${AWS_ACCESS_KEY_ID}
+DBSecretKey: ${AWS_SECRET_ACCESS_KEY}
