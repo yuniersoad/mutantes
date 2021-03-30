@@ -2,32 +2,21 @@ package mutantes;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
-import org.hibernate.validator.constraints.NotEmpty;
-import software.amazon.awssdk.regions.Region;
+import mutantes.configuration.DynamoDBConfig;
+import mutantes.configuration.RedisConfig;
 
 
 public class MutantsConfiguration extends Configuration {
-    @NotEmpty
-    private String dbregion = Region.US_EAST_1.toString();
+    private DynamoDBConfig dbConfig;
+    private RedisConfig  redisConfig;
 
-    @NotEmpty
-    private String dbaccesskeyid;
-
-    @NotEmpty
-    private String dbsecretkey;
-
-    @JsonProperty("DBRegion")
-    public String getDbregion() {
-        return dbregion;
+    @JsonProperty("DBConfig")
+    public DynamoDBConfig getDbConfig() {
+        return dbConfig;
     }
 
-    @JsonProperty("DBAccessKeyId")
-    public String getDbaccesskeyid() {
-        return dbaccesskeyid;
-    }
-
-    @JsonProperty("DBSecretKey")
-    public String getDbsecretkey() {
-        return dbsecretkey;
+    @JsonProperty("RedisConfig")
+    public RedisConfig getRedisConfig() {
+        return redisConfig;
     }
 }

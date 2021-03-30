@@ -7,6 +7,9 @@ import mutantes.db.Subject;
 import org.glassfish.jersey.server.ManagedAsync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.commands.JedisCommands;
+import redis.clients.jedis.exceptions.JedisConnectionException;
+import redis.clients.jedis.exceptions.JedisException;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -30,11 +33,15 @@ import java.util.concurrent.CompletionStage;
 @Consumes(MediaType.APPLICATION_JSON)
 public class MutantResource {
     private final static Logger log = LoggerFactory.getLogger(MutantResource.class);
+    public static String HUMAN_COUNT_CACHE_KEY = "HUMANS";
+    public static String MUTANT_COUNT_CACHE_KEY = "MUTANTS";
 
     private final DynamoDbAsyncTable<Subject> table;
+    private final JedisCommands cache;
 
-    public MutantResource(DynamoDbAsyncTable<Subject> table) {
+    public MutantResource(DynamoDbAsyncTable<Subject> table, JedisCommands cache) {
         this.table = table;
+        this.cache = cache;
     }
 
     @POST
@@ -48,14 +55,21 @@ public class MutantResource {
             // Just log DB errors so we can detect the issue, but keep processing the request since mutant detection is still possible
             if (error != null) log.error("Error fetching record: ", error);
 
-            boolean isMutant;
+            final boolean isMutant;
             if (subjectRecord != null) {
                 isMutant = subjectRecord.getMutant();
             } else {
                 isMutant = Detector.isMutant(dna.getDna());
                 subject.setMutant(isMutant);
-                table.putItem(subject);
+                table.putItem(subject).thenAccept((v) -> {
+                    try { // Only inc stats if saving to the DB was successful to keep consistency
+                        cache.incr(isMutant ? MUTANT_COUNT_CACHE_KEY: HUMAN_COUNT_CACHE_KEY);
+                    } catch (JedisException e){
+                        log.error("Error inc stats cache: ", e);
+                    }
+                }).exceptionally((e) -> {log.error("Error saving record", e); return null;});
             }
+
             final DNAResponse responsePayload = new DNAResponse(isMutant);
             asyncResponse.resume(Response.status(isMutant ? Status.OK: Status.FORBIDDEN)
                     .entity(responsePayload)

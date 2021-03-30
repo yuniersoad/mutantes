@@ -5,8 +5,12 @@ import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import mutantes.configuration.DynamoDBConfig;
+import mutantes.configuration.RedisConfig;
 import mutantes.db.Subject;
 import mutantes.resources.MutantResource;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.commands.JedisCommands;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -39,12 +43,26 @@ public class MutantsApplication extends Application<MutantsConfiguration> {
     @Override
     public void run(final MutantsConfiguration configuration,
                     final Environment environment) {
-        final AwsCredentials credentials = AwsBasicCredentials.create(configuration.getDbaccesskeyid(), configuration.getDbsecretkey());
+        final DynamoDbEnhancedAsyncClient ddbclient = buildDynamoDBclient(configuration);
+
+        final JedisCommands jedis = buildRedisClient(configuration);
+        environment.jersey().register(new MutantResource(ddbclient.table(Subject.MUTANTS_TABLE, TableSchema.fromBean(Subject.class)), jedis));
+    }
+
+    private JedisCommands buildRedisClient(MutantsConfiguration configuration) {
+        final RedisConfig redisConfig = configuration.getRedisConfig();
+        final JedisCommands jedis = new Jedis(redisConfig.getHost(), redisConfig.getPort(), 100);
+        return jedis;
+    }
+
+    private DynamoDbEnhancedAsyncClient buildDynamoDBclient(MutantsConfiguration configuration) {
+        final DynamoDBConfig dbConfig = configuration.getDbConfig();
+        final AwsCredentials credentials = AwsBasicCredentials.create(dbConfig.getDbaccesskeyid(), dbConfig.getDbsecretkey());
         final DynamoDbAsyncClient client = DynamoDbAsyncClient.builder()
                 .credentialsProvider(StaticCredentialsProvider.create(credentials))
-                .region(Region.of(configuration.getDbregion()))
+                .region(Region.of(dbConfig.getDbregion()))
                 .build();
         final DynamoDbEnhancedAsyncClient ddbclient = DynamoDbEnhancedAsyncClient.builder().dynamoDbClient(client).build();
-        environment.jersey().register(new MutantResource(ddbclient.table(Subject.MUTANTS_TABLE, TableSchema.fromBean(Subject.class))));
+        return ddbclient;
     }
 }

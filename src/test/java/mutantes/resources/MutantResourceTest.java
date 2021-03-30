@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import redis.clients.jedis.commands.JedisCommands;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 
 import javax.ws.rs.client.Entity;
@@ -23,16 +24,20 @@ import static org.mockito.Mockito.*;
 
 public class MutantResourceTest {
     public static final DynamoDbAsyncTable<Subject> ddbTableMock = mock(DynamoDbAsyncTable.class);
+    public static final JedisCommands cacheMock = mock(JedisCommands.class);
 
     @Before
     public void setUp(){
         reset(ddbTableMock);
+        reset(cacheMock);
         when(ddbTableMock.getItem(any(Subject.class))).thenReturn(completedFuture(null));
+        when(ddbTableMock.putItem(any(Subject.class))).thenReturn(completedFuture(null));
+        when(cacheMock.incr(anyString())).thenReturn(1L);
     }
 
     @ClassRule
     public static final ResourceTestRule resources = ResourceTestRule.builder()
-            .addResource(new MutantResource(ddbTableMock))
+            .addResource(new MutantResource(ddbTableMock, cacheMock))
             .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
             .build();
 
@@ -56,6 +61,7 @@ public class MutantResourceTest {
         Subject subjectSaved = subjectSavedCaptor.getValue();
         assertTrue(subjectSaved.getMutant());
         assertArrayEquals(dna, subjectSaved.getDna().toArray());
+        verify(cacheMock, times(1)).incr(MutantResource.MUTANT_COUNT_CACHE_KEY);
     }
 
 
@@ -77,6 +83,7 @@ public class MutantResourceTest {
         verify(ddbTableMock).putItem(subjectSavedCaptor.capture());
         Subject subjectSaved = subjectSavedCaptor.getValue();
         assertFalse(subjectSaved.getMutant());
+        verify(cacheMock, times(1)).incr(MutantResource.HUMAN_COUNT_CACHE_KEY);
     }
 
     private Response makeRequest(String[] dna) {

@@ -3,6 +3,11 @@ logging:
   loggers:
     com.mutantes: DEBUG
 
-DBRegion: ${AWS_DEFAULT_REGION:-us-east-1}
-DBAccessKeyId: ${AWS_ACCESS_KEY_ID}
-DBSecretKey: ${AWS_SECRET_ACCESS_KEY}
+DBConfig:
+  DBRegion: ${AWS_DEFAULT_REGION:-us-east-1}
+  DBAccessKeyId: ${AWS_ACCESS_KEY_ID}
+  DBSecretKey: ${AWS_SECRET_ACCESS_KEY}
+
+RedisConfig:
+  host: ${REDIS_HOST:-localhost}
+  port: ${REDIS_PORT:-6379}
