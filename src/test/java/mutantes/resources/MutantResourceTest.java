@@ -17,6 +17,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import java.util.Arrays;
+
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -84,6 +86,29 @@ public class MutantResourceTest {
         Subject subjectSaved = subjectSavedCaptor.getValue();
         assertFalse(subjectSaved.getMutant());
         verify(cacheMock, times(1)).incr(MutantResource.HUMAN_COUNT_CACHE_KEY);
+    }
+
+    @Test
+    public void checkStoredMutant() {
+        String[] dna = {
+                "ATGCGA",
+                "CAGTGC",
+                "TTATGT",
+                "AGAAGG",
+                "CCCCTA",
+                "TCACTG"
+        };
+        Subject storedSubject = new Subject(Arrays.asList(dna));
+        storedSubject.setMutant(true);
+        when(ddbTableMock.getItem(any(Subject.class))).thenReturn(completedFuture(storedSubject));
+
+        final Response response = makeRequest(dna);
+        assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        final DNAResponse dnaResponse = response.readEntity(DNAResponse.class);
+        assertTrue(dnaResponse.isMutant());
+
+        verify(ddbTableMock, never()).putItem(any(Subject.class));
+        verify(cacheMock, never()).incr(anyString());
     }
 
     private Response makeRequest(String[] dna) {
