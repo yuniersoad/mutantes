@@ -2,21 +2,21 @@ package mutantes.resources;
 
 import mutantes.api.DNARequestPayload;
 import mutantes.api.DNAResponse;
+import mutantes.api.StatsResponse;
 import mutantes.core.Detector;
 import mutantes.db.Subject;
 import org.glassfish.jersey.server.ManagedAsync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.commands.JedisCommands;
-import redis.clients.jedis.exceptions.JedisConnectionException;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.exceptions.JedisException;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -28,7 +28,7 @@ import javax.ws.rs.core.Response.Status;
 import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 
-@Path("/mutant")
+@Path("/")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class MutantResource {
@@ -37,14 +37,15 @@ public class MutantResource {
     public static String MUTANT_COUNT_CACHE_KEY = "MUTANTS";
 
     private final DynamoDbAsyncTable<Subject> table;
-    private final JedisCommands cache;
+    private final Jedis cache;
 
-    public MutantResource(DynamoDbAsyncTable<Subject> table, JedisCommands cache) {
+    public MutantResource(DynamoDbAsyncTable<Subject> table, Jedis cache) {
         this.table = table;
         this.cache = cache;
     }
 
-    @POST
+    @POST()
+    @Path("/mutant")
     @ManagedAsync
     public void checkMutant(@Suspended AsyncResponse asyncResponse,
                             @NotNull @Valid DNARequestPayload dna) {
@@ -76,5 +77,16 @@ public class MutantResource {
                     .build());
 
         });
+    }
+
+    @GET
+    @Path("/stats")
+    public Response getStats(){
+        final Pipeline p = cache.pipelined();
+        final redis.clients.jedis.Response<String> humanCount = p.get(HUMAN_COUNT_CACHE_KEY);
+        final redis.clients.jedis.Response<String> mutantCount = p.get(MUTANT_COUNT_CACHE_KEY);
+        p.sync();
+        final StatsResponse statsResponse = new StatsResponse(mutantCount.get(), humanCount.get());
+        return Response.ok().entity(statsResponse).build();
     }
 }

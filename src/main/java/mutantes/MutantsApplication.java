@@ -10,7 +10,6 @@ import mutantes.configuration.RedisConfig;
 import mutantes.db.Subject;
 import mutantes.resources.MutantResource;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.commands.JedisCommands;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -45,14 +44,13 @@ public class MutantsApplication extends Application<MutantsConfiguration> {
                     final Environment environment) {
         final DynamoDbEnhancedAsyncClient ddbclient = buildDynamoDBclient(configuration);
 
-        final JedisCommands jedis = buildRedisClient(configuration);
+        final Jedis jedis = buildRedisClient(configuration);
         environment.jersey().register(new MutantResource(ddbclient.table(Subject.MUTANTS_TABLE, TableSchema.fromBean(Subject.class)), jedis));
     }
 
-    private JedisCommands buildRedisClient(MutantsConfiguration configuration) {
+    private Jedis buildRedisClient(MutantsConfiguration configuration) {
         final RedisConfig redisConfig = configuration.getRedisConfig();
-        final JedisCommands jedis = new Jedis(redisConfig.getHost(), redisConfig.getPort(), 100);
-        return jedis;
+         return new Jedis(redisConfig.getHost(), redisConfig.getPort(), 100);
     }
 
     private DynamoDbEnhancedAsyncClient buildDynamoDBclient(MutantsConfiguration configuration) {
