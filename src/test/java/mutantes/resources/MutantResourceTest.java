@@ -44,7 +44,7 @@ public class MutantResourceTest {
 
     @ClassRule
     public static final ResourceTestRule resources = ResourceTestRule.builder()
-            .addResource(new MutantResource(repositoryMock, new RedisCache(cacheMock)))
+            .addResource(new MutantResource(repositoryMock, new RedisCache(cacheMock), 10))
             .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
             .build();
 
@@ -113,6 +113,41 @@ public class MutantResourceTest {
 
         verify(repositoryMock, never()).save(any(Subject.class));
         verify(cacheMock, never()).incr(anyString());
+    }
+
+    @Test
+    public void invalidDNATooLong() {
+        String[] dna = {
+                "ATGCGAaaaaa",
+                "CAGTGCaaaaa",
+                "TTATGTaaaaa",
+                "AGAAGGaaaaa",
+                "CCCCTAaaaaa",
+                "TCACTGaaaaa",
+                "TCACTGaaaaa",
+                "TCACTGaaaaa",
+                "TCACTGaaaaa",
+                "TCACTGaaaaa",
+                "TCACTGaaaaa",
+        };
+
+        final Response response = makeRequest(dna);
+        assertEquals(Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+    }
+
+    @Test
+    public void invalidDNAInvalidLetter(){
+        String[] dna = {
+                "xTGCGA",
+                "CAGTGC",
+                "TTATGT",
+                "AGAAGG",
+                "CCCCTA",
+                "TCACTG"
+        };
+
+        final Response response = makeRequest(dna);
+        assertEquals(Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     }
 
     @Test

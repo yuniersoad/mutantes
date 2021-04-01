@@ -33,10 +33,12 @@ public class MutantResource {
 
     private final SubjectRepository repo;
     private final Cache cache;
+    private final int maxMatrixSize;
 
-    public MutantResource(SubjectRepository subjectRepository, Cache cache) {
+    public MutantResource(SubjectRepository subjectRepository, Cache cache, int maxMatrixSize) {
         this.repo = subjectRepository;
         this.cache = cache;
+        this.maxMatrixSize = maxMatrixSize;
     }
 
     @POST()
@@ -44,6 +46,10 @@ public class MutantResource {
     @ManagedAsync
     public void checkMutant(@Suspended AsyncResponse asyncResponse,
                             @NotNull @Valid DNARequestPayload dna) {
+        if (!dna.isValid(maxMatrixSize)){
+            throw new WebApplicationException("Invalid DNA sequence", Status.BAD_REQUEST);
+        }
+
         repo.find(dna.getDna()).whenComplete((subjectRecordO, error) -> {
             boolean isMutant = subjectRecordO
                     .map(Subject::getMutant)

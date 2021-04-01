@@ -47,7 +47,7 @@ public class MutantsApplication extends Application<MutantsConfiguration> {
         final SubjectRepository subjectRepository = new DynamoDBSubjectRepository(ddbclient);
 
         final Jedis jedis = buildRedisClient(configuration);
-        environment.jersey().register(new MutantResource(subjectRepository, new RedisCache(jedis)));
+        environment.jersey().register(new MutantResource(subjectRepository, new RedisCache(jedis), configuration.getMaxMatrixSize()));
     }
 
     private Jedis buildRedisClient(MutantsConfiguration configuration) {

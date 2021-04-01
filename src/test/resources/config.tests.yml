@@ -11,3 +11,5 @@ DBConfig:
 RedisConfig:
   host: ${REDIS_HOST:-localhost}
   port: ${REDIS_PORT:-6379}
+
+maxMatrixSize: ${MAX_MATRIX_SIZE:-5000}
