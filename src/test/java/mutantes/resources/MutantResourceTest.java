@@ -5,6 +5,7 @@ import mutantes.api.DNARequestPayload;
 import mutantes.api.DNAResponse;
 import mutantes.api.StatsResponse;
 import mutantes.core.Subject;
+import mutantes.db.RedisCache;
 import mutantes.db.SubjectRepository;
 import org.glassfish.jersey.test.grizzly.GrizzlyWebTestContainerFactory;
 import org.junit.Before;
@@ -43,7 +44,7 @@ public class MutantResourceTest {
 
     @ClassRule
     public static final ResourceTestRule resources = ResourceTestRule.builder()
-            .addResource(new MutantResource(repositoryMock, cacheMock))
+            .addResource(new MutantResource(repositoryMock, new RedisCache(cacheMock)))
             .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
             .build();
 

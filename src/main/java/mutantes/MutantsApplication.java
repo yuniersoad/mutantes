@@ -8,6 +8,7 @@ import io.dropwizard.setup.Environment;
 import mutantes.configuration.DynamoDBConfig;
 import mutantes.configuration.RedisConfig;
 import mutantes.db.DynamoDBSubjectRepository;
+import mutantes.db.RedisCache;
 import mutantes.db.SubjectRepository;
 import mutantes.resources.MutantResource;
 import redis.clients.jedis.Jedis;
@@ -46,7 +47,7 @@ public class MutantsApplication extends Application<MutantsConfiguration> {
         final SubjectRepository subjectRepository = new DynamoDBSubjectRepository(ddbclient);
 
         final Jedis jedis = buildRedisClient(configuration);
-        environment.jersey().register(new MutantResource(subjectRepository, jedis));
+        environment.jersey().register(new MutantResource(subjectRepository, new RedisCache(jedis)));
     }
 
     private Jedis buildRedisClient(MutantsConfiguration configuration) {

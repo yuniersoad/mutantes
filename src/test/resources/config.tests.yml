@@ -1,0 +1,13 @@
+logging:
+  level: INFO
+  loggers:
+    com.mutantes: DEBUG
+
+DBConfig:
+  DBRegion: ${AWS_DEFAULT_REGION:-us-east-1}
+  DBAccessKeyId: TBD
+  DBSecretKey: TBD
+
+RedisConfig:
+  host: ${REDIS_HOST:-localhost}
+  port: ${REDIS_PORT:-6379}

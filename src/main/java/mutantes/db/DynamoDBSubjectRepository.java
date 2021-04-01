@@ -2,6 +2,9 @@ package mutantes.db;
 
 import com.google.common.hash.Hashing;
 import mutantes.core.Subject;
+import mutantes.resources.MutantResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -17,6 +20,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 public class DynamoDBSubjectRepository implements SubjectRepository {
+    private final static Logger log = LoggerFactory.getLogger(MutantResource.class);
+
     public static final String MUTANTS_TABLE = "Mutants";
 
     private final DynamoDbAsyncTable<SubjectDynamoDB> table;
@@ -31,6 +36,10 @@ public class DynamoDBSubjectRepository implements SubjectRepository {
         return table.getItem(subject).thenApply(s -> {
             if (s != null)
                 return Optional.of(s.toCore());
+            return Optional.<Subject>empty();
+        }).exceptionally(throwable -> {
+            // Just log DB errors so we can detect the issue, but keep processing the request since mutant detection is still possible
+            log.error("Error fetching record: ", throwable);
             return Optional.empty();
         });
     }
