@@ -30,7 +30,7 @@ public class DynamoDBSubjectRepository implements SubjectRepository {
         final SubjectDynamoDB subject = new SubjectDynamoDB(Arrays.asList(dna), false);
         return table.getItem(subject).thenApply(s -> {
             if (s != null)
-                return Optional.of(subject.toCore());
+                return Optional.of(s.toCore());
             return Optional.empty();
         });
     }
