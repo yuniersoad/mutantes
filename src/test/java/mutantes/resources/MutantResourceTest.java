@@ -4,7 +4,8 @@ import io.dropwizard.testing.junit.ResourceTestRule;
 import mutantes.api.DNARequestPayload;
 import mutantes.api.DNAResponse;
 import mutantes.api.StatsResponse;
-import mutantes.db.Subject;
+import mutantes.core.Subject;
+import mutantes.db.SubjectRepository;
 import org.glassfish.jersey.test.grizzly.GrizzlyWebTestContainerFactory;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -13,7 +14,6 @@ import org.mockito.ArgumentCaptor;
 import redis.clients.jedis.BuilderFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Pipeline;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
@@ -21,6 +21,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.Assert.*;
@@ -28,21 +29,21 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class MutantResourceTest {
-    public static final DynamoDbAsyncTable<Subject> ddbTableMock = mock(DynamoDbAsyncTable.class);
+    public static final SubjectRepository repositoryMock = mock(SubjectRepository.class);
     public static final Jedis cacheMock = mock(Jedis.class);
 
     @Before
     public void setUp(){
-        reset(ddbTableMock);
+        reset(repositoryMock);
         reset(cacheMock);
-        when(ddbTableMock.getItem(any(Subject.class))).thenReturn(completedFuture(null));
-        when(ddbTableMock.putItem(any(Subject.class))).thenReturn(completedFuture(null));
+        when(repositoryMock.find(any())).thenReturn(completedFuture(Optional.empty()));
+        when(repositoryMock.save(any(Subject.class))).thenReturn(completedFuture(null));
         when(cacheMock.incr(anyString())).thenReturn(1L);
     }
 
     @ClassRule
     public static final ResourceTestRule resources = ResourceTestRule.builder()
-            .addResource(new MutantResource(ddbTableMock, cacheMock))
+            .addResource(new MutantResource(repositoryMock, cacheMock))
             .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
             .build();
 
@@ -62,7 +63,7 @@ public class MutantResourceTest {
         assertTrue(dnaResponse.isMutant());
 
         ArgumentCaptor<Subject> subjectSavedCaptor = ArgumentCaptor.forClass(Subject.class);
-        verify(ddbTableMock).putItem(subjectSavedCaptor.capture());
+        verify(repositoryMock).save(subjectSavedCaptor.capture());
         Subject subjectSaved = subjectSavedCaptor.getValue();
         assertTrue(subjectSaved.getMutant());
         assertArrayEquals(dna, subjectSaved.getDna().toArray());
@@ -85,7 +86,7 @@ public class MutantResourceTest {
         assertFalse(dnaResponse.isMutant());
 
         ArgumentCaptor<Subject> subjectSavedCaptor = ArgumentCaptor.forClass(Subject.class);
-        verify(ddbTableMock).putItem(subjectSavedCaptor.capture());
+        verify(repositoryMock).save(subjectSavedCaptor.capture());
         Subject subjectSaved = subjectSavedCaptor.getValue();
         assertFalse(subjectSaved.getMutant());
         verify(cacheMock, times(1)).incr(MutantResource.HUMAN_COUNT_CACHE_KEY);
@@ -101,16 +102,15 @@ public class MutantResourceTest {
                 "CCCCTA",
                 "TCACTG"
         };
-        Subject storedSubject = new Subject(Arrays.asList(dna));
-        storedSubject.setMutant(true);
-        when(ddbTableMock.getItem(any(Subject.class))).thenReturn(completedFuture(storedSubject));
+        Subject storedSubject = new Subject(Arrays.asList(dna), true);
+        when(repositoryMock.find(eq(dna))).thenReturn(completedFuture(Optional.of(storedSubject)));
 
         final Response response = makeRequest(dna);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
         final DNAResponse dnaResponse = response.readEntity(DNAResponse.class);
         assertTrue(dnaResponse.isMutant());
 
-        verify(ddbTableMock, never()).putItem(any(Subject.class));
+        verify(repositoryMock, never()).save(any(Subject.class));
         verify(cacheMock, never()).incr(anyString());
     }
 

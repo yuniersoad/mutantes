@@ -7,14 +7,14 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import mutantes.configuration.DynamoDBConfig;
 import mutantes.configuration.RedisConfig;
-import mutantes.db.Subject;
+import mutantes.db.DynamoDBSubjectRepository;
+import mutantes.db.SubjectRepository;
 import mutantes.resources.MutantResource;
 import redis.clients.jedis.Jedis;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 
@@ -43,9 +43,10 @@ public class MutantsApplication extends Application<MutantsConfiguration> {
     public void run(final MutantsConfiguration configuration,
                     final Environment environment) {
         final DynamoDbEnhancedAsyncClient ddbclient = buildDynamoDBclient(configuration);
+        final SubjectRepository subjectRepository = new DynamoDBSubjectRepository(ddbclient);
 
         final Jedis jedis = buildRedisClient(configuration);
-        environment.jersey().register(new MutantResource(ddbclient.table(Subject.MUTANTS_TABLE, TableSchema.fromBean(Subject.class)), jedis));
+        environment.jersey().register(new MutantResource(subjectRepository, jedis));
     }
 
     private Jedis buildRedisClient(MutantsConfiguration configuration) {
