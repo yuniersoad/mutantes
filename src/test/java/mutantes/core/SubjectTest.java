@@ -1,11 +1,10 @@
 package mutantes.core;
 
-import mutantes.core.Subject;
 import org.junit.Test;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class SubjectTest {
 

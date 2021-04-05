@@ -2,7 +2,7 @@ package mutantes.core;
 
 import org.junit.Test;
 
-import static mutantes.core.Detector.isMutant;
+import static mutantes.core.detector.Detector.isMutant;
 import static org.junit.Assert.*;
 
 public class DetectorTest {
@@ -64,8 +64,7 @@ public class DetectorTest {
     }
 
     @Test
-    public void isMutantPositive5Sequence() {
-        // TODO: Ask if this 2 subseq of 4 in a 5 seq should be considered
+    public void isMutantNegative5Sequence() {
         final String[] sequence = new String[] {
                 "ATGCGA",
                 "CAGTGC",
@@ -74,7 +73,7 @@ public class DetectorTest {
                 "GCGTCA",
                 "TCACTG"
         };
-        assertTrue(isMutant(sequence));
+        assertFalse(isMutant(sequence));
     }
 
     @Test

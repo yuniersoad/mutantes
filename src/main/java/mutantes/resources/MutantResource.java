@@ -3,7 +3,7 @@ package mutantes.resources;
 import mutantes.api.DNARequestPayload;
 import mutantes.api.DNAResponse;
 import mutantes.api.StatsResponse;
-import mutantes.core.Detector;
+import mutantes.core.detector.Detector;
 import mutantes.core.Subject;
 import mutantes.db.Cache;
 import mutantes.db.SubjectRepository;
