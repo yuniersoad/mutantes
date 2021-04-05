@@ -1,0 +1,24 @@
+version: '3.3'
+
+services:
+  mutantes_api:
+    build: .
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      AWS_DYNAMODB_ENDPOINT: http://dynamodb:8000
+      AWS_ACCESS_KEY_ID: OK
+      AWS_SECRET_ACCESS_KEY: OK
+      REDIS_HOST: redis
+    depends_on:
+      - dynamodb
+      - redis
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    ports:
+      - "8000:8000"
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"

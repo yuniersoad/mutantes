@@ -4,9 +4,10 @@ logging:
     com.mutantes: DEBUG
 
 DBConfig:
-  DBRegion: ${AWS_DEFAULT_REGION:-us-east-1}
-  DBAccessKeyId: TBD
-  DBSecretKey: TBD
+  Endpoint: ${AWS_DYNAMODB_ENDPOINT:-https://dynamodb.us-east-1.amazonaws.com}
+  Region: ${AWS_DEFAULT_REGION:-us-east-1}
+  AccessKeyId: TBD
+  SecretKey: TBD
 
 RedisConfig:
   host: ${REDIS_HOST:-localhost}

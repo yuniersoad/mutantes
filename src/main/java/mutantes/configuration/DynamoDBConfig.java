@@ -6,26 +6,34 @@ import software.amazon.awssdk.regions.Region;
 
 public class DynamoDBConfig {
     @NotEmpty
-    private String dbregion = Region.US_EAST_1.toString();
+    private String region = Region.US_EAST_1.toString();
 
     @NotEmpty
-    private String dbaccesskeyid;
+    private String endpoint;
 
     @NotEmpty
-    private String dbsecretkey;
+    private String accesskeyid;
 
-    @JsonProperty("DBRegion")
-    public String getDbregion() {
-        return dbregion;
+    @NotEmpty
+    private String secretkey;
+
+    @JsonProperty("Region")
+    public String getRegion() {
+        return region;
     }
 
-    @JsonProperty("DBAccessKeyId")
-    public String getDbaccesskeyid() {
-        return dbaccesskeyid;
+    @JsonProperty("AccessKeyId")
+    public String getAccesskeyid() {
+        return accesskeyid;
     }
 
-    @JsonProperty("DBSecretKey")
-    public String getDbsecretkey() {
-        return dbsecretkey;
+    @JsonProperty("SecretKey")
+    public String getSecretkey() {
+        return secretkey;
+    }
+
+    @JsonProperty("Endpoint")
+    public String getEndpoint() {
+        return endpoint;
     }
 }
