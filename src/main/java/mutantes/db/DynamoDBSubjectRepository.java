@@ -1,5 +1,6 @@
 package mutantes.db;
 
+import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import mutantes.core.Subject;
 import mutantes.resources.MutantResource;
@@ -14,6 +15,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnor
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 
 import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +37,7 @@ public class DynamoDBSubjectRepository implements SubjectRepository {
         final SubjectDynamoDB subject = new SubjectDynamoDB(Arrays.asList(dna), false);
         return table.getItem(subject).thenApply(s -> {
             if (s != null)
-                return Optional.of(s.toCore());
+                return Optional.of(s.toCore(dna));
             return Optional.<Subject>empty();
         }).exceptionally(throwable -> {
             // Just log DB errors so we can detect the issue, but keep processing the request since mutant detection is still possible
@@ -52,21 +54,21 @@ public class DynamoDBSubjectRepository implements SubjectRepository {
     @DynamoDbBean
     public static class SubjectDynamoDB {
         private String id;
-        private List<String> dna;
         private Boolean isMutant;
+        private ZonedDateTime dateAdded;
+
 
         public SubjectDynamoDB(){} //Required by AWS Dynamodb client
 
         public SubjectDynamoDB(List<String> dna, Boolean isMutant) {
-            final StringBuilder allDna = new StringBuilder(dna.size() * dna.size());
+            Hasher hashCode = Hashing.sha256().newHasher();
             for (String s : dna) {
-                allDna.append(s);
+                hashCode = hashCode.putString(s.toUpperCase(), StandardCharsets.UTF_8);
+
             }
-            this.id = Hashing.sha256()
-                    .hashString(allDna.toString(), StandardCharsets.UTF_8)
-                    .toString();
-            this.dna = dna;
+            this.id = hashCode.hash().toString();
             this.isMutant = isMutant;
+            this.dateAdded = ZonedDateTime.now();
         }
 
         public SubjectDynamoDB(Subject subject){
@@ -78,14 +80,6 @@ public class DynamoDBSubjectRepository implements SubjectRepository {
         public String getId() { return id; }
         public void setId(String id) { this.id = id; }
 
-        public List<String> getDna() {
-            return dna;
-        }
-
-        public void setDna(List<String> dna) {
-            this.dna = dna;
-        }
-
         public Boolean getMutant() {
             return isMutant;
         }
@@ -94,10 +88,17 @@ public class DynamoDBSubjectRepository implements SubjectRepository {
             isMutant = mutant;
         }
 
-        @DynamoDbIgnore
-        public Subject toCore(){
-            return new Subject(dna, isMutant);
+        public ZonedDateTime getDateAdded() {
+            return dateAdded;
         }
 
+        public void setDateAdded(ZonedDateTime dateAdded) {
+            this.dateAdded = dateAdded;
+        }
+
+        @DynamoDbIgnore
+        public Subject toCore(String[] dna){
+            return new Subject(Arrays.asList(dna), isMutant);
+        }
     }
 }

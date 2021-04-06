@@ -2,6 +2,7 @@ package mutantes.db;
 
 import mutantes.core.Subject;
 import mutantes.db.DynamoDBSubjectRepository.SubjectDynamoDB;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -9,9 +10,11 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.Assert.assertEquals;
@@ -38,9 +41,13 @@ public class DynamoDBSubjectRepositoryTest {
 
     @BeforeClass
     public static void setUp(){
-        reset(table);
         when(client.<SubjectDynamoDB>table(anyString(), any())).thenReturn(table);
         repo = new DynamoDBSubjectRepository(client);
+    }
+
+    @Before
+    public void before(){
+        reset(table);
     }
 
     @Test
@@ -54,8 +61,13 @@ public class DynamoDBSubjectRepositoryTest {
     public void testFindSubject() throws ExecutionException, InterruptedException {
         SubjectDynamoDB result = new SubjectDynamoDB(Arrays.asList(dnaSample), true);
         when(table.getItem(any(SubjectDynamoDB.class))).thenReturn(completedFuture(result));
+
         final CompletionStage<Optional<Subject>> subjectO = repo.find(dnaSample);
-        assertEquals(new Subject(Arrays.asList(dnaSample), true), subjectO.toCompletableFuture().get().get());
+        ArgumentCaptor<SubjectDynamoDB> captor = ArgumentCaptor.forClass(SubjectDynamoDB.class);
+        verify(table, times(1)).getItem(captor.capture());
+        final String searchedKey = captor.getValue().getId();
+        assertEquals(dnaId, searchedKey);
+        assertTrue(subjectO.toCompletableFuture().get().get().getMutant());
     }
 
     @Test
@@ -67,12 +79,18 @@ public class DynamoDBSubjectRepositoryTest {
         final SubjectDynamoDB valueSaved = captor.getValue();
         assertTrue(valueSaved.getMutant());
         assertEquals(dnaId, valueSaved.getId());
-        assertEquals(Arrays.asList(dnaSample), valueSaved.getDna());
     }
 
     @Test
-    public void testGetId() {
+    public void testGeneratedId() {
         final SubjectDynamoDB s = new SubjectDynamoDB(Arrays.asList(dnaSample), true);
+        assertEquals(dnaId, s.getId());
+    }
+
+    @Test
+    public void testGeneratedIdIsCaseInsensitive() {
+        final List<String> dnaSampleDiffCase = Arrays.stream(dnaSample).map(String::toLowerCase).collect(Collectors.toList());
+        final SubjectDynamoDB s = new SubjectDynamoDB(dnaSampleDiffCase, true);
         assertEquals(dnaId, s.getId());
     }
 
